@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "math"
+name = "rat_rs"
 version = "0.1.0"

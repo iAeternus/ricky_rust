@@ -1,0 +1,10 @@
+[package]
+name = "rat_rs"
+version = "0.1.0"
+edition = "2021"
+description = "有理数库"
+
+[dependencies]
+
+[lib]
+crate-type = ["rlib"]

@@ -1,5 +1,16 @@
+//! frac是本lib最关键的数据结构，核心是Fraction结构体，字段包括分子numer，分母denom和符号sign
+//!
+//! # Example
+//! ```rust
+//! use rat_rs::frac::{Fraction, FractionSign};
+//! let f = Fraction::new(1, 2, FractionSign::NonNegative).unwrap();
+//! let g = Fraction::with_negative(1, 2).unwrap();
+//! assert_eq!(f + g, 0);
+//! ```
+use core::ops::Neg;
+
 /// 分数
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Fraction {
     numer: u32,
     denom: u32,
@@ -7,10 +18,38 @@ pub struct Fraction {
 }
 
 /// 符号
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum FractionSign {
     NonNegative = 0,
     Negative = 1,
+}
+
+impl Neg for FractionSign {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        if self == Self::Negative {
+            Self::NonNegative
+        } else {
+            Self::Negative
+        }
+    }
+}
+
+impl From<u8> for FractionSign {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => FractionSign::NonNegative,
+            1 => FractionSign::Negative,
+            _ => panic!("invalid sign"),
+        }
+    }
+}
+
+impl PartialEq<u32> for Fraction {
+    fn eq(&self, other: &u32) -> bool {
+        self.numer() == *other && self.denom() == 1
+    }
 }
 
 impl Fraction {
@@ -18,10 +57,10 @@ impl Fraction {
         if denom == 0 {
             return None;
         }
-        let gcd = gcd(numer, denom);
+        let gcd = gcd(numer.into(), denom.into());
         Some(Self {
-            numer: numer / gcd,
-            denom: denom / gcd,
+            numer: u32::try_from(numer as u64 / gcd).ok()?,
+            denom: u32::try_from(denom as u64 / gcd).ok()?,
             sign,
         })
     }
@@ -33,10 +72,22 @@ impl Fraction {
     pub fn with_negative(numer: u32, denom: u32) -> Option<Self> {
         Self::new(numer, denom, FractionSign::Negative)
     }
+
+    pub fn numer(&self) -> u32 {
+        self.numer
+    }
+
+    pub fn denom(&self) -> u32 {
+        self.denom
+    }
+
+    pub fn sign(&self) -> FractionSign {
+        self.sign
+    }
 }
 
 /// 计算两个数的最大公约数
-fn gcd(mut a: u32, mut b: u32) -> u32 {
+pub(crate) fn gcd(mut a: u64, mut b: u64) -> u64 {
     while b != 0 {
         let remainder = a % b;
         a = core::mem::replace(&mut b, remainder);

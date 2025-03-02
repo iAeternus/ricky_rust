@@ -8,7 +8,7 @@ macro_rules! primitive_unsign_conv {
                     Self::new(value.into(), 1, FractionSign::NonNegative).unwrap()
                 }
             }
-        ) *
+        )*
     };
 }
 
