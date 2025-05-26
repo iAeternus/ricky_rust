@@ -1,4 +1,14 @@
+//! ## Brief
 //! AVL树是一棵平衡二叉树，通过旋转保证二叉树的平衡
+//! 
+//! ## Author
+//! Ricky
+//! 
+//! ## Date 
+//! 2025/5/26
+//! 
+//! ## Version
+//! 1.0
 
 use std::fmt::{Debug, Display};
 
@@ -100,6 +110,18 @@ impl<T: Display> Display for AVLNode<T> {
 }
 
 /// AVL树
+/// 
+/// ## Example
+/// ```rust
+/// use avl_tree::avl_tree::AVLTree;
+/// 
+/// let mut t = AVLTree::new();
+/// t.insert(2);
+/// t.insert(1);
+/// t.insert(3);
+/// assert_eq!(2, t.height());
+/// assert!(t.contains(1));
+/// ```
 #[derive(Debug)]
 pub struct AVLTree<T>(Option<Box<AVLNode<T>>>);
 
@@ -111,10 +133,7 @@ impl<T> AVLTree<T> {
 
     /// 获取树的高度
     pub fn height(&self) -> isize {
-        match self.0 {
-            Some(ref rt) => rt.height,
-            None => 0,
-        }
+        self.0.as_ref().map_or(0, |rt| rt.height)
     }
 
     /// 更新当前节点的高度
@@ -133,6 +152,14 @@ impl<T> AVLTree<T> {
     fn rot_right(&mut self) {
         self.0 = self.0.take().map(|v| v.rot_right());
     }
+
+    fn rotate(&mut self, rot_mod: RotMod) {
+        match rot_mod {
+            RotMod::LeftRot => self.rot_left(),
+            RotMod::RightRot => self.rot_right(),
+            RotMod::NotRot => self.update_height(),
+        }
+    }
 }
 
 impl<T> Default for AVLTree<T> {
@@ -144,47 +171,37 @@ impl<T> Default for AVLTree<T> {
 impl<T: PartialOrd> AVLTree<T> {
     /// 插入
     pub fn insert(&mut self, data: T) {
-        let rot_mod: RotMod = match self.0 {
-            Some(ref mut rt) => {
-                if data < rt.data {
-                    rt.lch.insert(data);
-                } else if data > rt.data {
-                    rt.rch.insert(data);
-                } else {
-                    return; // 重复数据不插入
-                }
-                rt.rot_mod()
+        let rot_mod = if let Some(rt) = &mut self.0 {
+            if data < rt.data {
+                rt.lch.insert(data);
+            } else if data > rt.data {
+                rt.rch.insert(data);
+            } else {
+                return; // 重复数据不插入
             }
-            None => {
-                self.0 = Some(Box::new(AVLNode::new(
-                    data,
-                    AVLTree::default(),
-                    AVLTree::default(),
-                )));
-                RotMod::NotRot
-            }
+            rt.rot_mod()
+        } else {
+            self.0 = Some(Box::new(AVLNode::new(
+                data,
+                AVLTree::default(),
+                AVLTree::default(),
+            )));
+            RotMod::NotRot
         };
-
-        match rot_mod {
-            RotMod::LeftRot => self.rot_left(),
-            RotMod::RightRot => self.rot_right(),
-            RotMod::NotRot => self.update_height(),
-        }
+        self.rotate(rot_mod);
     }
 
+    /// 判断数据是否存在
     pub fn contains(&self, data: T) -> bool {
-        match &self.0 {
-            Some(rt) => {
-                if data < rt.data {
-                    rt.lch.contains(data)
-                } else if data > rt.data {
-                    rt.rch.contains(data)
-                } else {
-                    true
-                }
+        self.0.as_ref().is_some_and(|rt| {
+            if data < rt.data {
+                rt.lch.contains(data)
+            } else if data > rt.data {
+                rt.rch.contains(data)
+            } else {
+                true
             }
-            None => false,
-        }
+        })
     }
 }
 
