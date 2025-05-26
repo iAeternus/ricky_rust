@@ -1,28 +1,59 @@
-//! frac是本lib最关键的数据结构，核心是Fraction结构体，字段包括分子numer，分母denom和符号sign
+//! frac是本lib最关键的数据结构，核心是Fraction结构体，字段包括分子numer,分母denom和符号sign
 //!
 //! # Example
 //! ```rust
-//! use rat_rs::frac::{Fraction, FractionSign};
-//! let f = Fraction::new(1, 2, FractionSign::NonNegative).unwrap();
+//! use rat_rs::frac::{Fraction, FractionU32, FractionSign};
+//! 
+//! let f = FractionU32::new(1, 2, FractionSign::NonNegative).unwrap();
 //! let g = Fraction::with_negative(1, 2).unwrap();
 //! assert_eq!(f + g, 0);
 //! ```
+
 use core::ops::Neg;
 
-/// 分数
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Fraction {
-    numer: u32,
-    denom: u32,
-    sign: FractionSign,
-}
+use crate::error::RationalError;
 
-/// 符号
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum FractionSign {
     NonNegative = 0,
     Negative = 1,
 }
+
+#[derive(Debug)]
+pub struct Fraction<T> {
+    pub(crate) numer: T,
+    pub(crate) denom: T,
+    pub(crate) sign: FractionSign,
+}
+
+pub type FractionU8 = Fraction<u8>;
+pub type FractionU16 = Fraction<u16>;
+pub type FractionU32 = Fraction<u32>;
+
+impl From<u8> for FractionSign {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Self::NonNegative,
+            1 => Self::Negative,
+            _ => panic!("invalid sign number"),
+        }
+    }
+}
+
+impl<T> Clone for Fraction<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            numer: self.numer.clone(),
+            denom: self.denom.clone(),
+            sign: self.sign,
+        }
+    }
+}
+
+impl<T> Copy for Fraction<T> where T: Copy {}
 
 impl Neg for FractionSign {
     type Output = Self;
@@ -36,67 +67,74 @@ impl Neg for FractionSign {
     }
 }
 
-impl From<u8> for FractionSign {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => FractionSign::NonNegative,
-            1 => FractionSign::Negative,
-            _ => panic!("invalid sign"),
-        }
+impl<T> PartialEq<Fraction<T>> for Fraction<T>
+where
+    T: PartialEq<T>,
+{
+    fn eq(&self, other: &Fraction<T>) -> bool {
+        self.numer == other.numer && self.denom == other.denom && self.sign == other.sign
     }
 }
 
-impl PartialEq<u32> for Fraction {
-    fn eq(&self, other: &u32) -> bool {
-        self.numer() == *other && self.denom() == 1
-    }
-}
+impl<T> Eq for Fraction<T> where T: Eq {}
 
-impl Fraction {
-    pub fn new(numer: u32, denom: u32, sign: FractionSign) -> Option<Self> {
-        if denom == 0 {
-            return None;
+pub trait UnsignedFractionInt: Copy {}
+
+impl UnsignedFractionInt for u8 {}
+impl UnsignedFractionInt for u16 {}
+impl UnsignedFractionInt for u32 {}
+
+impl<T> Fraction<T>
+where
+    T: Into<u64> + TryFrom<u64> + UnsignedFractionInt,
+{
+    pub fn new(numer: T, denom: T, sign: FractionSign) -> Result<Self, RationalError> {
+        if denom.into() == 0 {
+            return Err(RationalError::ZeroDenominator);
         }
         let gcd = gcd(numer.into(), denom.into());
-        Some(Self {
-            numer: u32::try_from(numer as u64 / gcd).ok()?,
-            denom: u32::try_from(denom as u64 / gcd).ok()?,
-            sign,
-        })
+        let numer =
+            T::try_from(numer.into() / gcd).map_err(|_| RationalError::NumeratorOverflow)?;
+        let denom =
+            T::try_from(denom.into() / gcd).map_err(|_| RationalError::DenominatorOverflow)?;
+        Ok(Self { numer, denom, sign })
     }
 
-    pub fn with_non_negative(numer: u32, denom: u32) -> Option<Self> {
+    pub fn with_non_negative(numer: T, denom: T) -> Result<Self, RationalError> {
         Self::new(numer, denom, FractionSign::NonNegative)
     }
 
-    pub fn with_negative(numer: u32, denom: u32) -> Option<Self> {
+    pub fn with_negative(numer: T, denom: T) -> Result<Self, RationalError> {
         Self::new(numer, denom, FractionSign::Negative)
     }
 
-    pub fn numer(&self) -> u32 {
+    /// 分子
+    pub fn numer(&self) -> T {
         self.numer
     }
 
-    pub fn denom(&self) -> u32 {
+    /// 分母
+    pub fn denom(&self) -> T {
         self.denom
     }
 
+    /// 负号
     pub fn sign(&self) -> FractionSign {
         self.sign
     }
 }
 
-/// 计算两个数的最大公约数
-pub(crate) fn gcd(mut a: u64, mut b: u64) -> u64 {
-    while b != 0 {
-        let remainder = a % b;
-        a = core::mem::replace(&mut b, remainder);
+/// 求两个u64的最大公约数
+pub(crate) fn gcd(mut m: u64, mut n: u64) -> u64 {
+    while n != 0 {
+        let remainder = m % n;
+        m = core::mem::replace(&mut n, remainder);
     }
-    a
+    m
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
 
     #[test]
@@ -113,60 +151,52 @@ mod tests {
     #[test]
     fn test_new_fraction_with_corner_cases() {
         assert_eq!(
-            Fraction::new(42, 12, FractionSign::NonNegative),
-            Some(Fraction {
+            FractionU32::new(42, 12, FractionSign::NonNegative),
+            Ok(Fraction {
                 numer: 7,
                 denom: 2,
                 sign: FractionSign::NonNegative
             })
         );
         assert_eq!(
-            Fraction::new(12, 42, FractionSign::NonNegative),
-            Some(Fraction {
+            FractionU32::new(12, 42, FractionSign::Negative),
+            Ok(Fraction {
                 numer: 2,
                 denom: 7,
-                sign: FractionSign::NonNegative
+                sign: FractionSign::Negative
             })
         );
-        assert_eq!(Fraction::new(100, 0, FractionSign::NonNegative), None);
+        assert!(FractionU32::new(100, 0, FractionSign::NonNegative).is_err());
         assert_eq!(
-            Fraction::new(0, 100, FractionSign::NonNegative),
-            Some(Fraction {
+            FractionU32::new(0, 100, FractionSign::NonNegative),
+            Ok(Fraction {
                 numer: 0,
                 denom: 1,
                 sign: FractionSign::NonNegative
             })
         );
         assert_eq!(
-            Fraction::new(37, 73, FractionSign::NonNegative),
-            Some(Fraction {
+            FractionU32::new(37, 73, FractionSign::Negative),
+            Ok(Fraction {
                 numer: 37,
                 denom: 73,
-                sign: FractionSign::NonNegative
+                sign: FractionSign::Negative,
             })
         );
         assert_eq!(
-            Fraction::new(42, 1, FractionSign::NonNegative),
-            Some(Fraction {
+            FractionU32::new(42, 1, FractionSign::NonNegative),
+            Ok(Fraction {
                 numer: 42,
                 denom: 1,
                 sign: FractionSign::NonNegative
             })
         );
         assert_eq!(
-            Fraction::new(42, 12, FractionSign::NonNegative),
-            Some(Fraction {
-                numer: 7,
-                denom: 2,
-                sign: FractionSign::NonNegative
-            })
-        );
-        assert_eq!(
-            Fraction::new(1, 42, FractionSign::NonNegative),
-            Some(Fraction {
+            FractionU32::new(1, 42, FractionSign::Negative),
+            Ok(Fraction {
                 numer: 1,
                 denom: 42,
-                sign: FractionSign::NonNegative
+                sign: FractionSign::Negative
             })
         );
     }
