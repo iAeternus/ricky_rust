@@ -1,27 +1,34 @@
 use std::fmt::Display;
 
-use crate::avl_tree::AVLTree;
+use crate::avl_tree::AvlTree;
 
 /// AVL树节点
 #[derive(Debug)]
-pub struct AVLNode<T> {
+pub struct AvlNode<T> {
+    /// 数据
     pub(crate) data: T,
+    /// 节点高度，用于计算平衡因子
     pub(crate) height: isize,
-    pub(crate) lch: AVLTree<T>,
-    pub(crate) rch: AVLTree<T>,
+    /// 左孩子
+    pub(crate) lch: AvlTree<T>,
+    /// 右孩子
+    pub(crate) rch: AvlTree<T>,
 }
 
 /// 旋转模式
 #[derive(Debug)]
 pub enum RotMod {
+    /// 左旋
     LeftRot,
+    /// 右旋
     RightRot,
+    /// 无需旋转
     NotRot,
 }
 
-impl<T> AVLNode<T> {
+impl<T> AvlNode<T> {
     /// 创建一个新节点
-    pub fn new(data: T, lch: AVLTree<T>, rch: AVLTree<T>) -> Self {
+    pub fn new(data: T, lch: AvlTree<T>, rch: AvlTree<T>) -> Self {
         Self {
             data,
             height: 0,
@@ -48,9 +55,9 @@ impl<T> AVLNode<T> {
             None => return Box::new(self),
         };
 
-        self.rch = AVLTree(right.lch.0.take());
+        self.rch = AvlTree(right.lch.0.take());
         self.rch.update_height();
-        right.lch = AVLTree(Some(Box::new(self)));
+        right.lch = AvlTree(Some(Box::new(self)));
         right.height = 1 + std::cmp::max(right.lch.height(), right.rch.height());
         right
     }
@@ -62,15 +69,15 @@ impl<T> AVLNode<T> {
             None => return Box::new(self),
         };
 
-        self.lch = AVLTree(left.rch.0.take());
+        self.lch = AvlTree(left.rch.0.take());
         self.lch.update_height();
-        left.rch = AVLTree(Some(Box::new(self)));
+        left.rch = AvlTree(Some(Box::new(self)));
         left.height = 1 + std::cmp::max(left.lch.height(), left.rch.height());
         left
     }
 }
 
-impl<T: Display> AVLNode<T> {
+impl<T: Display> AvlNode<T> {
     /// 节点打印支持函数
     fn fmt_helper(
         &self,
@@ -93,7 +100,7 @@ impl<T: Display> AVLNode<T> {
 }
 
 /// 节点打印
-impl<T: Display> Display for AVLNode<T> {
+impl<T: Display> Display for AvlNode<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.fmt_helper("", true, f)
     }

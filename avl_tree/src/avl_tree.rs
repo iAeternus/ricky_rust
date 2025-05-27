@@ -12,7 +12,10 @@
 
 use std::fmt::{Debug, Display};
 
-use crate::{avl_node::{AVLNode, RotMod}, iter::{IntoIter, Iter}};
+use crate::{
+    avl_node::{AvlNode, RotMod},
+    avl_iter::{IntoIter, Iter},
+};
 
 /// AVL树
 ///
@@ -28,9 +31,9 @@ use crate::{avl_node::{AVLNode, RotMod}, iter::{IntoIter, Iter}};
 /// assert!(t.contains(1));
 /// ```
 #[derive(Debug)]
-pub struct AVLTree<T>(pub(crate) Option<Box<AVLNode<T>>>);
+pub struct AvlTree<T>(pub(crate) Option<Box<AvlNode<T>>>);
 
-impl<T> AVLTree<T> {
+impl<T> AvlTree<T> {
     /// 创建一棵空树
     pub fn new() -> Self {
         Self::default()
@@ -78,7 +81,7 @@ impl<T> AVLTree<T> {
     }
 }
 
-impl<T: PartialOrd> AVLTree<T> {
+impl<T: PartialOrd> AvlTree<T> {
     /// 插入
     pub fn insert(&mut self, data: T) {
         let rot_mod = if let Some(rt) = &mut self.0 {
@@ -91,10 +94,10 @@ impl<T: PartialOrd> AVLTree<T> {
             }
             rt.rot_mod()
         } else {
-            self.0 = Some(Box::new(AVLNode::new(
+            self.0 = Some(Box::new(AvlNode::new(
                 data,
-                AVLTree::default(),
-                AVLTree::default(),
+                AvlTree::default(),
+                AvlTree::default(),
             )));
             RotMod::NotRot
         };
@@ -116,14 +119,14 @@ impl<T: PartialOrd> AVLTree<T> {
 }
 
 /// 默认构造
-impl<T> Default for AVLTree<T> {
+impl<T> Default for AvlTree<T> {
     fn default() -> Self {
-        AVLTree(None)
+        AvlTree(None)
     }
 }
 
 /// 打印
-impl<T: Display> Display for AVLTree<T> {
+impl<T: Display> Display for AvlTree<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.0 {
             Some(rt) => rt.fmt(f),
@@ -132,7 +135,7 @@ impl<T: Display> Display for AVLTree<T> {
     }
 }
 
-impl<T> IntoIterator for AVLTree<T> {
+impl<T> IntoIterator for AvlTree<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
@@ -147,7 +150,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let mut t = AVLTree::new();
+        let mut t = AvlTree::new();
         t.insert(4);
         t.insert(5);
         t.insert(6);

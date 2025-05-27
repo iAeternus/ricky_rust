@@ -1,8 +1,8 @@
-use crate::{avl_node::AVLNode, avl_tree::AVLTree};
+use crate::{avl_node::AvlNode, avl_tree::AvlTree};
 
 /// AVL树不可变引用迭代器
 pub struct Iter<'a, T> {
-    pub(crate) stack: Vec<&'a AVLNode<T>>,
+    pub(crate) stack: Vec<&'a AvlNode<T>>,
 }
 
 impl<T> Iter<'_, T> {
@@ -34,17 +34,17 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
 /// AVL树所有权转移迭代器
 pub struct IntoIter<T> {
-    stack: Vec<AVLNode<T>>,
+    stack: Vec<AvlNode<T>>,
 }
 
 impl<T> IntoIter<T> {
-    pub fn new(tree: AVLTree<T>) -> Self {
+    pub fn new(tree: AvlTree<T>) -> Self {
         let mut iter = Self { stack: vec![] };
         iter.push_left(tree.0);
         iter
     }
 
-    fn push_left(&mut self, mut node: Option<Box<AVLNode<T>>>) {
+    fn push_left(&mut self, mut node: Option<Box<AvlNode<T>>>) {
         while let Some(mut boxed_node) = node {
             let left = boxed_node.lch.0.take();
             node = left;
@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn test_iter() {
         // Given
-        let mut t = AVLTree::new();
+        let mut t = AvlTree::new();
         t.insert(4);
         t.insert(2);
         t.insert(6);
@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn test_into_iter() {
         // Given
-        let mut t = AVLTree::new();
+        let mut t = AvlTree::new();
         t.insert(4);
         t.insert(2);
         t.insert(6);
