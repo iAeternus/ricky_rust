@@ -105,8 +105,7 @@ where
                     + u64::from(self.denom()) * u64::from(rhs.numer());
                 let denom = u64::from(self.denom()) * u64::from(rhs.denom());
                 let gcd = gcd(numer, denom);
-                let numer =
-                    T::try_from(numer / gcd).map_err(|_| RationalError::NumeratorOverflow)?;
+                let numer = T::try_from(numer / gcd).map_err(|_| RationalError::NumeratorOverflow)?;
                 let denom =
                     T::try_from(denom / gcd).map_err(|_| RationalError::DenominatorOverflow)?;
                 Ok(Self::new(numer, denom, self.sign()).unwrap())
@@ -122,8 +121,7 @@ where
                     (numer_part2 - numer_part1, FractionSign::Negative)
                 };
                 let gcd = gcd(numer, denom);
-                let numer =
-                    T::try_from(numer / gcd).map_err(|_| RationalError::NumeratorOverflow)?;
+                let numer = T::try_from(numer / gcd).map_err(|_| RationalError::NumeratorOverflow)?;
                 let denom =
                     T::try_from(denom / gcd).map_err(|_| RationalError::DenominatorOverflow)?;
                 Ok(Self::new(numer, denom, sign).unwrap())

@@ -1,2 +1,2 @@
 [workspace]
-members = [ "avl_tree","rat_rs"]
+members = [ "avl_tree", "http-server", "matrix", "rat_rs"]
