@@ -30,4 +30,5 @@ impl<T> Matrix<T> {
     pub fn get_mut(&mut self, i: usize, j: usize) -> Result<&mut T, MatrixError> {
         todo!()
     }
+    
 }
